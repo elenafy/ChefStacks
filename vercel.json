@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "functions": {
+    "src/app/api/ingest/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/extract/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/test-memories-ai/route.ts": {
+      "maxDuration": 300
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/diagnostics"
+    }
+  ]
+}

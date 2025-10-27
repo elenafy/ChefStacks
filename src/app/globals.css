@@ -1,0 +1,255 @@
+/* src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Chef Stacks Color Palette (Yelp-Red Core) - CSS Custom Properties */
+:root {
+  /* Primary Colors */
+  --color-primary: #D32323;
+  --color-primary-hover: #B91C1C;
+  
+  /* Secondary Colors */
+  --color-secondary: #FFF8F6;
+  --color-secondary-accent: #F7B267;
+  
+  /* Text Colors */
+  --color-text-primary: #2B2B2B;
+  --color-text-secondary: #555555;
+  
+  /* UI Colors */
+  --color-border: #E5E5E5;
+  --color-card: #FFFFFF;
+  --color-muted: #FDF3F2;
+  
+  /* Functional Colors */
+  --color-success: #3BA55D;
+  --color-warning: #F59E0B;
+  --color-error: #DC2626;
+  --color-info: #2563EB;
+  
+  /* Optional Accent Variations */
+  --color-sage: #73A580;
+  --color-warm-gray: #F0ECE9;
+}
+
+html, body { height: 100%; }
+body { @apply bg-white text-text-primary; }
+
+/* --- Stack Mode (mobile/tablet landscape) --- */
+@media (orientation: landscape) and (max-width: 1024px) {
+  .stack .header { padding: 12px; margin-bottom: 12px; }
+  .stack .title { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stack .recipe-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+  .stack .left-col { grid-column: span 1 / span 1; }
+  .stack .stats-row { margin-bottom: 12px; gap: 8px; }
+  .stack .ingredients-aside { position: sticky; top: 8px; max-height: calc(100dvh - 16px); overflow: auto; }
+  .stack .step-card { padding: 10px 12px; }
+  .stack .step-text { line-height: 1.3; font-size: 15px; }
+}
+
+/* --- Force Stack Mode via class (for manual toggle) --- */
+.force-stack .header { padding: 12px; margin-bottom: 12px; }
+.force-stack .title { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.force-stack .recipe-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+.force-stack .left-col { grid-column: span 1 / span 1; }
+.force-stack .stats-row { margin-bottom: 12px; gap: 8px; }
+.force-stack .ingredients-aside { position: sticky; top: 8px; max-height: calc(100dvh - 16px); overflow: auto; }
+.force-stack .step-card { padding: 10px 12px; }
+.force-stack .step-text { line-height: 1.3; font-size: 15px; }
+
+/* --- Stack Mode Mobile Layout (single column only on mobile) --- */
+@media (max-width: 768px) {
+  .force-stack .recipe-grid { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+  }
+  .force-stack .ingredients-aside { 
+    order: 1; 
+    position: static; 
+    max-height: none; 
+    overflow: visible; 
+  }
+  .force-stack .left-col { 
+    order: 2; 
+    max-height: none; 
+    overflow: visible; 
+  }
+}
+
+/* --- Enhanced Stack Mode Styling --- */
+.force-stack .header { 
+  padding: 8px 12px; 
+  margin-bottom: 8px; 
+  border-radius: 12px;
+}
+.force-stack .title { 
+  font-size: 16px; 
+  font-weight: 700;
+  line-height: 1.2;
+}
+.force-stack .stats-row { 
+  margin-bottom: 8px; 
+  gap: 6px; 
+}
+.force-stack .stat-card {
+  padding: 6px 8px;
+  font-size: 11px;
+}
+.force-stack .ingredients-aside { 
+  position: sticky; 
+  top: 4px; 
+  max-height: calc(100dvh - 8px); 
+  overflow: auto; 
+  border-radius: 12px;
+}
+.force-stack .left-col {
+  max-height: calc(100dvh - 20px);
+  overflow-y: auto;
+}
+
+/* --- Floating Animation for Kitchen Library --- */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(-1deg); }
+}
+
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(0.5deg); }
+}
+
+.animate-float-slow {
+  animation: float-slow 3s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 2.5s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float-fast 2s ease-in-out infinite;
+}
+
+/* --- Print tweaks (notes included by default) --- */
+@media print {
+  body { 
+    background: white; 
+    margin: 0;
+    padding: 0;
+  }
+  .no-print { display: none !important; }
+  /* hide common CTA elements in print */
+  button, summary, details, .print\:hidden { display: none !important; }
+  /* gentle global scale-down for one-page fit */
+  html { font-size: 90%; }
+  a[href]::after { content: ""; } /* don't append link URLs */
+  
+  /* Main container optimization */
+  .stack {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8px !important;
+  }
+  
+  /* Header optimization */
+  .header { 
+    margin-bottom: 8px !important; 
+    padding: 8px !important; 
+    border: 1px solid #e2e8f0 !important;
+  }
+  .title {
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 4px !important;
+  }
+  
+  /* Stats row optimization */
+  .stats-row { 
+    margin-bottom: 8px !important; 
+    gap: 6px !important; 
+    font-size: 0.8rem !important;
+  }
+  
+  /* Recipe grid - ensure 2-column layout */
+  .recipe-grid { 
+    gap: 8px !important; 
+    grid-template-columns: 2fr 1fr !important;
+    display: grid !important;
+  }
+  
+  /* Left column (instructions) */
+  .left-col {
+    padding-right: 8px !important;
+  }
+  
+  /* Right column (ingredients) */
+  .ingredients-aside {
+    display: block !important;
+    position: static !important;
+    top: auto !important;
+  }
+  
+  /* Step cards optimization */
+  .step-card { 
+    break-inside: avoid;
+    margin-bottom: 4px !important;
+    padding: 6px !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+  .step-text {
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+  }
+  
+  /* Ingredients optimization */
+  .ingredient-row { 
+    padding-top: 3px !important; 
+    padding-bottom: 3px !important; 
+    font-size: 0.8rem !important;
+  }
+  
+  /* Pro tips optimization */
+  .pro-tips {
+    margin-bottom: 6px !important;
+    padding: 6px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  /* Notes section optimization */
+  .notes-section {
+    margin-bottom: 6px !important;
+    padding: 6px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  /* Main recipe image - show in print when images are enabled */
+  .main-recipe-image {
+    display: block !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Force single page */
+  .stack {
+    page-break-inside: avoid;
+    height: auto !important;
+    max-height: 100vh !important;
+    overflow: visible !important;
+  }
+  
+  /* Optimize spacing for compact layout */
+  section {
+    margin-bottom: 6px !important;
+  }
+  
+  h2, h3 {
+    font-size: 0.9rem !important;
+    margin-bottom: 4px !important;
+  }
+}

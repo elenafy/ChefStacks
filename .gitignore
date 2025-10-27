@@ -1,0 +1,134 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/tools/youtube_recipe_extractor/.venv
+/tools/youtube_recipe_extractor/out
+/tools/youtube_recipe_extractor/*.mp4
+/tools/youtube_recipe_extractor/**/*.tmp*.jpg
+
+# Cache directories
+.cache/
+
+# Temporary YouTube player scripts (generated during extraction)
+*-player-script.js
+
+# Temporary files directory
+/temp/
+
+# Python virtual environment
+/venv/
+chef-stacks/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Test files and debug scripts
+test-*.js
+debug-*.js
+diagnose-*.js
+verify-*.js
+validation-*.js
+
+# Development and setup files
+setup-*.sh
+setup-*.js
+setup-*.md
+
+# Documentation files (keep only main README)
+*_README.md
+*_SETUP.md
+*_GUIDE.md
+*_CHECKLIST.md
+*_SUMMARY.md
+*_UPDATE.md
+*_CHECK.md
+*_FIX.md
+*_CLEANUP.md
+*_COMPLETE.md
+*_ERROR.md
+
+# SQL migration files (should be in migrations folder)
+*.sql
+
+# Data files (should be in database or separate data repo)
+/data/
+
+# Screenshots (temporary files)
+/public/screenshots/
+
+# Player scripts (already covered but being explicit)
+*-player-script.js
+
+# Build artifacts
+*.tsbuildinfo
+next-env.d.ts
+
+# Development and test files
+src/app/test-*
+src/app/debug-*
+src/app/dev-*
+src/app/api/debug*
+src/app/api/*/test*
+
+# Temporary extraction results
+extraction_result*.json
+
+# Development documentation
+*_ANALYSIS*.md
+*_CLEANUP*.md
+*_PIPELINE*.md
+*_IMPROVEMENT*.md
+*_SYSTEM*.md
+*_DIAGRAM*.md
+
+scripts/chat-recommended-test.js
+
+# Security: Prevent sensitive documentation from being committed
+*DEPLOYMENT*.md
+*INTEGRATION*.md
+*SECRET*.md
+*CONFIG*.md
+*SETUP*.md
+*GUIDE*.md
+*SECURITY*.md
