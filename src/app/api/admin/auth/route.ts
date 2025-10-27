@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-// Simple admin authentication - in production, use proper authentication
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+// Admin authentication - requires ADMIN_PASSWORD environment variable
+// In production, this MUST be set via environment variables
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+// Fail fast if admin password is not set in production
+if (!ADMIN_PASSWORD && process.env.NODE_ENV === 'production') {
+  throw new Error('ADMIN_PASSWORD environment variable must be set in production');
+}
 
 export async function POST(req: NextRequest) {
   try {
+    // Check if admin password is configured
+    if (!ADMIN_PASSWORD) {
+      return NextResponse.json(
+        { error: "Admin authentication not configured" },
+        { status: 500 }
+      );
+    }
+    
     const { password } = await req.json();
     
     if (password === ADMIN_PASSWORD) {
