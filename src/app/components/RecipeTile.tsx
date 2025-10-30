@@ -212,6 +212,20 @@ export default function RecipeTile({
             src={recipe.image}
             alt={recipe.title}
             className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            decoding="async"
+            onError={(e) => {
+              const el = e.currentTarget as HTMLImageElement
+              // Avoid infinite loop if proxy also fails
+              if (!el.dataset.fallback) {
+                el.dataset.fallback = '1'
+                el.src = `/api/proxy-image?url=${encodeURIComponent(recipe.image)}`
+              } else {
+                // Final fallback to blank placeholder
+                el.src = '/images/Favicon.png'
+              }
+            }}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">

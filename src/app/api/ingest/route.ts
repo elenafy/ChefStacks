@@ -1276,6 +1276,40 @@ export async function POST(req: NextRequest) {
             }
           }
 
+          // Mirror hero image to Supabase Storage to avoid third-party hotlink/CDN issues
+          try {
+            const hero = extractedData?.image as string | undefined;
+            if (hero && typeof hero === 'string' && (hero.startsWith('http://') || hero.startsWith('https://')) && process.env.SUPABASE_SECRET_KEY) {
+              const supa = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SECRET_KEY!
+              );
+              const hu = new URL(hero);
+              const isTikTok = /tiktok/i.test(hu.hostname);
+              const referer = isTikTok ? 'https://www.tiktok.com/' : `${hu.protocol}//${hu.host}`;
+              const accept = 'image/webp,image/jpeg,image/png;q=0.9,*/*;q=0.8';
+              const userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+              const resp = await fetch(hero, {
+                headers: { 'Referer': referer, 'Accept': accept, 'User-Agent': userAgent, ...(isTikTok ? { 'Origin': 'https://www.tiktok.com' } : {}) },
+                redirect: 'follow',
+                cache: 'no-store',
+              });
+              if (resp.ok) {
+                const contentType = resp.headers.get('content-type') || 'image/jpeg';
+                const ab = await resp.arrayBuffer();
+                const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+                const key = `recipes/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+                const { error: upErr } = await supa.storage.from('recipe-images').upload(key, new Blob([ab], { type: contentType }), { upsert: false, contentType });
+                if (!upErr) {
+                  const { data: pub } = supa.storage.from('recipe-images').getPublicUrl(key);
+                  if (pub?.publicUrl) {
+                    extractedData.image = pub.publicUrl;
+                  }
+                }
+              }
+            }
+          } catch {}
+
           // Build Supabase Insert shape
           const supabaseInsert = buildSupabaseInsertPayload(
             extractedData,

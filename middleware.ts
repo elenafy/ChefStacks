@@ -4,7 +4,7 @@ export function middleware(request: NextRequest) {
   // Check if the request is for admin routes
   if (request.nextUrl.pathname.startsWith('/admin')) {
     // Skip authentication check for the auth API endpoint
-    if (request.nextUrl.pathname === '/api/admin/auth') {
+    if (request.nextUrl.pathname === '/api/admin/auth' || request.nextUrl.pathname === '/api/admin/backfill-images') {
       return NextResponse.next();
     }
     
