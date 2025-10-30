@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const q = searchParams.get('q')
     const userId = searchParams.get('user_id')
+    const limitParam = searchParams.get('limit')
+    const limit = limitParam ? Math.max(1, Math.min(200, parseInt(limitParam, 10) || 0)) : undefined
     
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,13 +36,13 @@ export async function GET(request: NextRequest) {
     
     let recipes
     if (userId === 'public') {
-      recipes = await db.getCommunityFeed()
+      recipes = await db.getCommunityFeed(limit ?? 100)
     } else if (user) {
       // Show user's own recipes (their versions and any they own)
       recipes = await db.getUserRecipes(user.id)
     } else {
       // For anonymous users, show community feed
-      recipes = await db.getCommunityFeed()
+      recipes = await db.getCommunityFeed(limit ?? 100)
     }
     
     // Convert to legacy format for backward compatibility
@@ -58,10 +60,20 @@ export async function GET(request: NextRequest) {
         recipe.title.toLowerCase().includes(searchTerm) ||
         recipe.subtitle.toLowerCase().includes(searchTerm)
       )
-      return NextResponse.json(filtered)
+      const res = NextResponse.json(filtered)
+      // Cache public filtered responses briefly at the edge
+      if (!user || userId === 'public') {
+        res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+      }
+      return res
     }
     
-    return NextResponse.json(legacyRecipes)
+    const res = NextResponse.json(legacyRecipes)
+    // Cache public community feed responses at the edge
+    if (!user || userId === 'public') {
+      res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    }
+    return res
   } catch (error) {
     console.error('Error fetching recipes:', error)
     // Return empty array to avoid falling back to file-based data for community feed

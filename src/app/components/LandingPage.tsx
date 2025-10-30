@@ -40,7 +40,7 @@ export default function LandingPage() {
   } = useRecipeLoading();
 
   useEffect(() => {
-    fetch("/api/recipes")
+    fetch("/api/recipes?user_id=public&limit=40")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -187,7 +187,7 @@ export default function LandingPage() {
         // Play notification sound
         playRecipeNotificationSound();
         
-        fetch("/api/recipes").then((r) => r.json()).then((newRecipes) => {
+        fetch("/api/recipes?user_id=public&limit=40").then((r) => r.json()).then((newRecipes) => {
           setRecipes(newRecipes);
           // Scroll to the top of the community section to show the new recipe
           setTimeout(() => {
@@ -259,7 +259,7 @@ export default function LandingPage() {
       });
       
       // Refresh the recipes list
-      fetch("/api/recipes").then((r) => r.json()).then(setRecipes);
+      fetch("/api/recipes?user_id=public&limit=40").then((r) => r.json()).then(setRecipes);
     } catch (error) {
       console.error('Error toggling save:', error);
     }
