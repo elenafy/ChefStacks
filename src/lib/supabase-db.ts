@@ -658,7 +658,7 @@ export class SupabaseDB {
 
     // Build results: use best version if available, otherwise use base
     const results: Recipe[] = []
-    const baseMap = new Map((fullBases || []).map((b: any) => [b.id, b]))
+    const baseMap = new Map<string, Recipe>((fullBases || []).map((b: any) => [b.id, b as Recipe]))
     
     for (const baseId of baseIds.slice(0, limit)) {
       const version = bestVersionByBase[baseId]
