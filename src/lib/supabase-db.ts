@@ -586,21 +586,25 @@ export class SupabaseDB {
 
   // Community feed: for each base (is_base=true), choose top version if exists else the base.
   async getCommunityFeed(limit = 100): Promise<Recipe[]> {
-    // Fetch a bounded set of bases first to avoid scanning entire table
-    const baseFetchLimit = Math.max(limit * 3, limit) // fetch extra to account for bases with no public versions
-    const { data: bases, error } = await this.supabase
+    const client = this.getClient()
+    
+    // Use a more efficient approach: fetch bases and their best versions in a single optimized query
+    // First, get the most recent base recipes (we'll fetch a bit more to account for bases without versions)
+    const baseFetchLimit = Math.min(limit * 2, 200) // Cap at 200 to avoid fetching too many
+    
+    const { data: bases, error: basesError } = await client
       .from('recipes')
-      .select('*')
+      .select('id')
       .eq('is_base', true)
       .eq('is_public', true)
       .order('created_at', { ascending: false })
       .limit(baseFetchLimit)
 
-    if (error) throw error
+    if (basesError) throw basesError
 
     // If no base recipes found, fall back to all public recipes (for migration period)
     if (!bases || bases.length === 0) {
-      const { data: fallbackRecipes, error: fallbackError } = await this.supabase
+      const { data: fallbackRecipes, error: fallbackError } = await client
         .from('recipes')
         .select('*')
         .eq('is_public', true)
@@ -610,43 +614,75 @@ export class SupabaseDB {
       return fallbackRecipes || []
     }
 
-    const baseIds = (bases as any[]).map((b: any) => b.id)
+    const baseIds = bases.map((b: any) => b.id)
 
-    // Fetch all candidate top versions in one query, ordered by popularity then recency
-    const { data: versions, error: versionsError } = await this.supabase
+    // Fetch versions more efficiently: limit to reasonable number per base
+    // We'll fetch up to 5 versions per base (should be enough to find the best one)
+    // Order by saves_count desc, then created_at desc to get best first
+    const { data: versions, error: versionsError } = await client
       .from('recipes')
       .select('*')
       .in('parent_id', baseIds)
       .eq('is_public', true)
       .order('saves_count', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
+      .limit(baseIds.length * 5) // Limit total versions fetched
 
     if (versionsError) throw versionsError
 
-    // Pick the best version per base: highest saves_count, then newest
+    // Efficiently pick the best version per base (first occurrence due to ordering)
     const bestVersionByBase: Record<string, Recipe> = {}
-    for (const v of (versions || []) as any[]) {
-      const parentId: string = (v as any).parent_id
-      const current: any = bestVersionByBase[parentId]
-      if (!current) {
-        bestVersionByBase[parentId] = v as any
+    if (versions) {
+      for (const v of versions as any[]) {
+        const parentId: string = (v as any).parent_id
+        if (parentId && !bestVersionByBase[parentId]) {
+          bestVersionByBase[parentId] = v as any
+        }
+        // Early exit if we've found versions for all bases
+        if (Object.keys(bestVersionByBase).length === baseIds.length) {
+          break
+        }
       }
     }
 
+    // Now fetch full base recipes only for those we need
+    const neededBaseIds = baseIds.slice(0, limit).filter((id: string) => !bestVersionByBase[id])
+    const basesToFetch = neededBaseIds.length > 0 ? neededBaseIds : baseIds.slice(0, limit)
+    
+    const { data: fullBases, error: fullBasesError } = await client
+      .from('recipes')
+      .select('*')
+      .in('id', basesToFetch)
+
+    if (fullBasesError) throw fullBasesError
+
+    // Build results: use best version if available, otherwise use base
     const results: Recipe[] = []
-    for (const base of bases) {
-      const top = bestVersionByBase[base.id]
-      results.push(top || base)
+    const baseMap = new Map((fullBases || []).map((b: any) => [b.id, b]))
+    
+    for (const baseId of baseIds.slice(0, limit)) {
+      const version = bestVersionByBase[baseId]
+      if (version) {
+        results.push(version)
+      } else {
+        const base = baseMap.get(baseId)
+        if (base) {
+          results.push(base)
+        }
+      }
       if (results.length >= limit) break
     }
 
     // Sort by saves_count desc then created_at desc for display
     const sorted: any[] = [...results].sort((a: any, b: any) => {
-      const diffSaves = (b?.saves_count || 0) - (a?.saves_count || 0)
-      if (diffSaves !== 0) return diffSaves
-      const diffTime = new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime()
-      return diffTime
+      const aSaves = a?.saves_count || 0
+      const bSaves = b?.saves_count || 0
+      if (aSaves !== bSaves) return bSaves - aSaves
+      const aTime = new Date(a?.created_at || 0).getTime()
+      const bTime = new Date(b?.created_at || 0).getTime()
+      return bTime - aTime
     })
+    
     return sorted as Recipe[]
   }
 

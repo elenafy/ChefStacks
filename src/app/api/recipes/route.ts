@@ -19,20 +19,23 @@ export async function GET(request: NextRequest) {
     const limitParam = searchParams.get('limit')
     const limit = limitParam ? Math.max(1, Math.min(200, parseInt(limitParam, 10) || 0)) : undefined
     
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-    )
-    const db = new SupabaseDB()
-    
-    // Get user from auth header if available
+    // Only create Supabase client if we need auth (for user-specific queries)
     const authHeader = request.headers.get('authorization')
     let user = null
-    if (authHeader) {
+    let supabase = null
+    
+    // Only check auth if we have an auth header (skip for public queries)
+    if (authHeader && userId !== 'public') {
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+      )
       const token = authHeader.replace('Bearer ', '')
       const { data: { user: authUser } } = await supabase.auth.getUser(token)
       user = authUser
     }
+    
+    const db = new SupabaseDB()
     
     let recipes
     if (userId === 'public') {
@@ -46,11 +49,17 @@ export async function GET(request: NextRequest) {
     }
     
     // Convert to legacy format for backward compatibility
+    // Only convert what we need - optimize by batching
     const legacyRecipes = recipes.map(convertToLegacyRecipe)
 
     // If Supabase returned no recipes, return an empty list (no file-based fallback)
     if (!legacyRecipes || legacyRecipes.length === 0) {
-      return NextResponse.json([])
+      const res = NextResponse.json([])
+      // Cache empty responses briefly
+      if (!user || userId === 'public') {
+        res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
+      }
+      return res
     }
     
     // Apply search filter if provided
@@ -61,17 +70,17 @@ export async function GET(request: NextRequest) {
         recipe.subtitle.toLowerCase().includes(searchTerm)
       )
       const res = NextResponse.json(filtered)
-      // Cache public filtered responses briefly at the edge
+      // Cache public filtered responses at the edge
       if (!user || userId === 'public') {
-        res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+        res.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300')
       }
       return res
     }
     
     const res = NextResponse.json(legacyRecipes)
-    // Cache public community feed responses at the edge
+    // Cache public community feed responses more aggressively at the edge
     if (!user || userId === 'public') {
-      res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+      res.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300')
     }
     return res
   } catch (error) {

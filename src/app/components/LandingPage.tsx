@@ -39,9 +39,24 @@ export default function LandingPage() {
     cancelLoading
   } = useRecipeLoading();
 
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(true);
+
   useEffect(() => {
-    fetch("/api/recipes?user_id=public&limit=40")
-      .then((r) => r.json())
+    // Use AbortController to cancel request if component unmounts
+    const controller = new AbortController();
+    
+    setIsLoadingRecipes(true);
+    fetch("/api/recipes?user_id=public&limit=40", {
+      signal: controller.signal,
+      // Add cache headers for browser caching
+      cache: 'default',
+    })
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error(`HTTP error! status: ${r.status}`);
+        }
+        return r.json();
+      })
       .then((data) => {
         if (Array.isArray(data)) {
           setRecipes(data);
@@ -51,9 +66,19 @@ export default function LandingPage() {
         }
       })
       .catch((error) => {
-        console.error("Error fetching recipes:", error);
+        // Don't log abort errors
+        if (error.name !== 'AbortError') {
+          console.error("Error fetching recipes:", error);
+        }
         setRecipes([]);
+      })
+      .finally(() => {
+        setIsLoadingRecipes(false);
       });
+    
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const savedCount = useMemo(
@@ -506,7 +531,14 @@ export default function LandingPage() {
 
       {/* Gallery */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
-        {filtered.length > 0 ? (
+        {isLoadingRecipes ? (
+          <div className="col-span-full text-center py-12">
+            <div className="flex items-center justify-center gap-2 text-slate-500 text-lg mb-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Loading recipes...
+            </div>
+          </div>
+        ) : filtered.length > 0 ? (
           filtered.map((r) => (
             <RecipeTile key={r.id} recipe={r} />
           ))
@@ -515,7 +547,7 @@ export default function LandingPage() {
             <div className="text-slate-500 text-lg mb-2">No recipes found</div>
             <div className="text-slate-400 text-sm">
               {recipes.length === 0 
-                ? "Loading recipes..." 
+                ? "No recipes available" 
                 : "Try adjusting your search or difficulty filter"
               }
             </div>
